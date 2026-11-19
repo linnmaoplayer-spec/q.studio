@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="icon.png">
+    <title>q.studio v3.0.2</title>
+</head>
+<body>
+    <!-- Barra Superior Fixa (BarTools) -->
+    <div class="barTools">
+        <div class="barLeft">
+            <img src="icon.png" alt="logo" style="width: 18px; height: 18px; object-fit: contain; vertical-align: middle;">
+            <span>q.studio</span>
+
+            <!-- Menu File -->
+            <div class="dropdownFile">
+                <button id="fileMenuBtn" class="barBtn">📁 File ▾</button>
+                <div id="fileDropdownContent" class="dropdownMenu" style="display: none;">
+                    <button id="menuNewProj" class="dropItem">📄 Novo Projeto</button>
+                    <button id="menuImportProj" class="dropItem">📂 Importar Projeto (.json)</button>
+                    <button id="menuExportProj" class="dropItem">💾 Salvar Projeto (.json)</button>
+                    <hr style="margin: 2px 0; border: 1px solid #000;">
+                    <button id="menuImportAsset" class="dropItem">📥 Importar Arquivos (PNG, MP4, MP3, JS, PY)</button>
+                    <hr style="margin: 2px 0; border: 1px solid #000;">
+                    <button id="menuExportHtml" class="dropItem" style="background:#bbf7d0;">🌐 Exportar HTML</button>
+                </div>
+            </div>
+
+            <!-- Inputs Ocultos para Importação -->
+            <input type="file" id="importProjectInput" accept=".json" style="display: none;">
+            <input type="file" id="importAssetsInput" accept=".png,.jpg,.jpeg,.gif,.webp,.mp4,.webm,.mp3,.wav,.ogg,.js,.py" multiple style="display: none;">
+
+            <div class="pageManager">
+                <label for="pageSelect">Página:</label>
+                <select id="pageSelect" class="barSelect"></select>
+                <button id="addPageBtn" class="barBtn" title="Nova Página">+ Página</button>
+                <button id="renamePageBtn" class="barBtn" title="Renomear Página">✎</button>
+                <button id="delPageBtn" class="barBtn" title="Excluir Página">✕</button>
+            </div>
+            
+            <select id="insertObjectButton" class="barBtn createHighlight" title="Inserir Objeto">
+                <option value="" disabled selected>+ Criar Objeto</option>
+                <option value="input">◈ input</option>
+                <option value="textarea">◈ caixa de texto</option>
+                <option value="button">◈ button</option>
+                <option value="img">◈ image</option>
+                <option value="video">◈ vídeo</option>
+                <option value="audio">◈ áudio</option>
+                <option value="select">◈ menu (select)</option>
+                <option value="h1">◈ título</option>
+                <option value="p">◈ texto</option>
+                <option value="iframe">◈ iframe (Web)</option>
+                <option value="frame">◈ frame (Div Colorida)</option>
+                <option value="div">◈ div (Container)</option>
+            </select>
+        </div>
+        <div class="barActions">
+            <button id="apiConfigBtn" class="barBtn" style="background:#fef08a;">⚙ API Config</button>
+            <button id="docsBtn" class="barBtn">◈ docs</button>
+            <button id="exportBtn" class="barBtn exportHighlight">exportar HTML</button>
+        </div>
+    </div>
+
+    <!-- Coluna Esquerda: Explorador + Arquivos Importados -->
+    <div id="leftSidebar">
+        <div id="explorerPanel">
+            <div class="panelHeader">
+                <strong>EXPLORADOR</strong>
+                <span id="objectCount">0 itens</span>
+            </div>
+            <ul id="explorerList"></ul>
+        </div>
+
+        <div id="importedFilesPanel">
+            <div class="panelHeader">
+                <strong>ARQUIVOS IMPORTADOS</strong>
+                <button id="quickImportBtn" class="miniBtn" title="Importar Arquivos">+ Importar</button>
+            </div>
+            <div class="importHint">Arraste mídias para o palco ou clique em scripts</div>
+            <ul id="importedFilesList"></ul>
+        </div>
+    </div>
+
+    <!-- Palco Principal -->
+    <iframe id="viewportGame" title="window"></iframe>
+
+    <!-- Painel de Propriedades -->
+    <div id="propertiesPanel">
+        <strong>PROPRIEDADES</strong>
+        <hr style="border: 1px solid #000;">
+        <p id="noSelectionMsg">Clique em um item no palco ou explorador.</p>
+
+        <div id="propFields" style="display: none;">
+            <label>Nome do Objeto:</label>
+            <input type="text" id="propName" class="inputProp">
+
+            <label id="propTextLabel">Texto / Placeholder / URL:</label>
+            <input type="text" id="propText" class="inputProp">
+
+            <div id="propSrcGroup">
+                <label id="propSrcLabel">Link da Mídia (URL):</label>
+                <input type="text" id="propSrc" class="inputProp" placeholder="https://...">
+                <label style="margin-top: 6px; display: block;">Ou importar arquivo:</label>
+                <input type="file" id="propMediaFile" accept="image/*,video/*,audio/*" class="inputProp fileInput">
+            </div>
+
+            <!-- Sistema de Parentesco (Pai) -->
+            <label>Elemento Pai (Parent):</label>
+            <select id="propParent" class="inputProp barSelect" style="width:100%;">
+                <option value="">Nenhum (Raiz da Página)</option>
+            </select>
+
+            <div class="dimRow">
+                <div>
+                    <label>Pos X (px):</label>
+                    <input type="number" id="propX" class="inputProp" step="1">
+                </div>
+                <div>
+                    <label>Pos Y (px):</label>
+                    <input type="number" id="propY" class="inputProp" step="1">
+                </div>
+            </div>
+
+            <div class="dimRow">
+                <div>
+                    <label>Largura (px):</label>
+                    <input type="number" id="propWidth" class="inputProp" step="1" min="1">
+                </div>
+                <div>
+                    <label>Altura (px):</label>
+                    <input type="number" id="propHeight" class="inputProp" step="1" placeholder="auto">
+                </div>
+            </div>
+
+            <div class="dimRow">
+                <div>
+                    <label>Rotação (deg):</label>
+                    <input type="number" id="propRotation" class="inputProp" step="1" value="0">
+                </div>
+                <div>
+                    <label>Raio Borda: <span id="valRadius">0</span>px</label>
+                    <input type="range" id="propRadius" min="0" max="100" value="0" class="inputProp" style="padding:0; cursor:pointer;">
+                </div>
+            </div>
+
+            <div class="dimRow">
+                <div>
+                    <label>Borda Width:</label>
+                    <input type="number" id="propBorderWidth" class="inputProp" min="0" value="0">
+                </div>
+                <div>
+                    <label>Cor da Borda:</label>
+                    <input type="color" id="propBorderColor" class="inputProp" value="#000000">
+                </div>
+            </div>
+
+            <label>Tamanho do Texto (px):</label>
+            <input type="number" id="propFontSize" class="inputProp" placeholder="16">
+
+            <div class="dimRow" style="align-items: center; margin-top: 6px;">
+                <label style="cursor: pointer;"><input type="checkbox" id="propVisibleCheck" checked> Visível</label>
+            </div>
+
+            <label>Cor de Fundo:</label>
+            <input type="color" id="propBg" class="inputProp">
+
+            <label>Cor do Texto:</label>
+            <input type="color" id="propColor" class="inputProp">
+
+            <button id="deleteBtn" class="inputProp" style="background:#fee2e2; margin-top:8px; cursor:pointer; font-weight:bold;">Excluir Objeto</button>
+        </div>
+    </div>
+
+    <!-- Mini Editor de Código -->
+    <div id="codeEditorPanel">
+        <div class="editorHeader">
+            <div class="editorTabs">
+                <button id="tabPy" class="tabBtn active">main.py</button>
+                <button id="tabCss" class="tabBtn">style.css (@import)</button>
+                <button id="tabConsole" class="tabBtn">console</button>
+            </div>
+            <div class="editorControls">
+                <button id="toggleMaximizeBtn" class="miniBtn" title="Maximizar / Minimizar">🗖</button>
+                <button id="runPyBtn" class="runBtn">▶ Executar</button>
+                <button id="stopPyBtn" class="stopBtn">■ Parar</button>
+            </div>
+        </div>
+
+        <div id="pyContainer" class="codeContainer">
+            <div class="codeWrapper">
+                <pre id="pyHighlight" class="codeHighlight" aria-hidden="true"></pre>
+                <textarea id="pyCode" class="codeTextarea" spellcheck="false" placeholder="# Ex: btn = page.create('button', 'meu_btn')"></textarea>
+            </div>
+            <div id="pyMiniStatus" class="consoleStatusBar">Pronto. Clique em ▶ Executar para testar.</div>
+        </div>
+
+        <div id="cssContainer" class="codeContainer" style="display: none;">
+            <div class="codeWrapper">
+                <pre id="cssHighlight" class="codeHighlight" aria-hidden="true"></pre>
+                <textarea id="cssCode" class="codeTextarea" spellcheck="false" placeholder="@import url('https://fonts.googleapis.com/css2?family=Inter&display=swap');"></textarea>
+            </div>
+            <div class="consoleStatusBar">Suporte completo a @import url() e regras CSS preservadas.</div>
+        </div>
+
+        <div id="consoleContainer" class="codeContainer" style="display: none;">
+            <div class="consoleToolbar">
+                <span>SAÍDA DO CONSOLE (print)</span>
+                <button id="clearConsoleBtn" class="miniBtn">Limpar</button>
+            </div>
+            <div id="pyConsoleOutput" class="consoleLogArea">Console iniciado...</div>
+        </div>
+    </div>
+
+    <!-- Modal de Configuração de API (Janela Separada na BarTools) -->
+    <div id="apiModal" class="modalOverlay" style="display: none;">
+        <div class="modalBox" style="width: 460px;">
+            <div class="modalHeader">
+                <strong>⚙ CONFIGURAÇÃO DE SERVIDOR & API</strong>
+                <button id="closeApiBtn" class="closeBtn">X</button>
+            </div>
+            <div class="modalBody" style="display: flex; flex-direction: column; gap: 10px;">
+                <div>
+                    <label><strong>URL Base da API (API_BASE_URL):</strong></label>
+                    <input type="text" id="apiBaseUrlInput" class="inputProp" placeholder="https://api.seuservidor.com/v1">
+                </div>
+                <div>
+                    <label><strong>Token de Autorização (Bearer Token):</strong></label>
+                    <input type="text" id="apiTokenInput" class="inputProp" placeholder="seu_token_secreto_aqui">
+                </div>
+                <div class="dimRow">
+                    <div>
+                        <label><strong>Timeout (ms):</strong></label>
+                        <input type="number" id="apiTimeoutInput" class="inputProp" value="5000" min="500">
+                    </div>
+                    <div>
+                        <label><strong>Método Padrão:</strong></label>
+                        <select id="apiMethodInput" class="inputProp barSelect" style="width: 100%; height: 28px;">
+                            <option value="POST">POST</option>
+                            <option value="GET">GET</option>
+                            <option value="PUT">PUT</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label><strong>Headers Extras (JSON):</strong></label>
+                    <textarea id="apiHeadersInput" class="inputProp" rows="3" style="font-family: Consolas, monospace;">{"Content-Type": "application/json"}</textarea>
+                </div>
+                <button id="saveApiBtn" class="barBtn exportHighlight" style="padding: 8px; font-size: 12px;">✔ Salvar Configurações de API</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Documentação Completa v2.5 -->
+    <div id="docsModal" class="modalOverlay" style="display: none;">
+        <div class="modalBox" style="width: 800px; max-height: 90vh;">
+            <div class="modalHeader">
+                <strong>◈ DOCUMENTAÇÃO COMPLETA Q.STUDIO v2.5 (TODAS AS FUNÇÕES) ◈</strong>
+                <button id="closeDocsBtn" class="closeBtn">X</button>
+            </div>
+            
+            <div class="docNavTabs">
+                <button class="docTabBtn active" onclick="showDocSection('sec-create', this)">1. Criação & Hierarquia</button>
+                <button class="docTabBtn" onclick="showDocSection('sec-props', this)">2. Propriedades & Estilos</button>
+                <button class="docTabBtn" onclick="showDocSection('sec-events', this)">3. Eventos, Navegação & API</button>
+                <button class="docTabBtn" onclick="showDocSection('sec-device', this)">4. Device & Funções Nativas</button>
+            </div>
+
+            <div class="modalBody">
+                <section id="sec-create" class="docSection">
+                    <h3>1. Criação Dinâmica de Ativos e Hierarquia (Parentesco)</h3>
+                    <p>Crie elementos em tempo real via Python ou arraste arquivos importados diretamente para o palco:</p>
+                    <div style="margin: 8px 0; border: 2px dashed #000; padding: 8px; background: #f8fafc; text-align: center;">
+                        <img src="icon.png" alt="Ativo" style="width: 48px; height: 48px; object-fit: contain; display: block; margin: 0 auto 4px auto;">
+                        <span style="font-size: 11px; font-weight: bold;">[Todos os ativos suportam posicionamento absoluto, rotação e parentesco]</span>
+                    </div>
+                    <ul>
+                        <li><code>page.create(tipo, nome)</code> - Cria um novo elemento no palco. Tipos aceitos: <code>"button"</code>, <code>"frame"</code> (div colorida), <code>"div"</code>, <code>"iframe"</code>, <code>"img"</code>, <code>"video"</code>, <code>"audio"</code>, <code>"input"</code>, <code>"textarea"</code>, <code>"select"</code>, <code>"h1"</code>, <code>"p"</code>.</li>
+                        <li><code>obj.parent = outro_obj</code> - Define o elemento pai (aninha o elemento dentro de um <code>frame</code> ou <code>div</code>). Use <code>obj.parent = None</code> para voltar à raiz.</li>
+                        <li><code>obj.remove()</code> - Remove permanentemente o elemento da tela.</li>
+                    </ul>
+                    <pre class="docCode">card = page.create("frame", "painel_principal")
+card.width = 250
+card.height = 150
+
+btn = page.create("button", "botao_interno")
+btn.parent = card
+btn.x = 20
+btn.y = 30
+btn.text = "Clique Aqui"</pre>
+                </section>
+
+                <section id="sec-props" class="docSection" style="display: none;">
+                    <h3>2. Propriedades Visuais, Rotação e Estilos Seguros</h3>
+                    <ul>
+                        <li><code>obj.x</code> / <code>obj.y</code> - Define ou lê a posição em píxeis (<code>left</code> e <code>top</code>).</li>
+                        <li><code>obj.width</code> / <code>obj.height</code> - Define ou lê largura e altura em píxeis.</li>
+                        <li><code>obj.rotation</code> - Define ou lê o ângulo de rotação em graus (ex: <code>obj.rotation = 45</code>).</li>
+                        <li><code>obj.text</code> / <code>obj.value</code> - Altera ou lê o texto exibido ou o valor digitado em inputs.</li>
+                        <li><code>obj.src</code> - Altera a URL ou arquivo de mídia (<code>img</code>, <code>video</code>, <code>audio</code>, <code>iframe</code>).</li>
+                        <li><code>obj.bg</code> / <code>obj.color</code> - Altera a cor de fundo e a cor do texto (Hex ou RGB).</li>
+                        <li><code>obj.visible</code> - Define visibilidade (<code>True</code> ou <code>False</code>).</li>
+                        <li><code>obj.addStyle("regra: valor;")</code> - Adiciona CSS inline ao elemento <strong>sem apagar</strong> as configurações anteriores.</li>
+                        <li><code>obj.transform</code> - Aplica transformações CSS brutas (ex: <code>"scale(1.2) rotate(10deg)"</code>).</li>
+                    </ul>
+                    <pre class="docCode">btn.addStyle("box-shadow: 4px 4px 0px #000; border-radius: 8px;")
+btn.rotation = -10</pre>
+                </section>
+
+                <section id="sec-events" class="docSection" style="display: none;">
+                    <h3>3. Eventos, Mídia, Navegação e API</h3>
+                    <ul>
+                        <li><code>obj.on_click(funcao)</code> - Executa a função Python quando o elemento for clicado.</li>
+                        <li><code>page.on_keydown(funcao)</code> - Captura teclas pressionadas no teclado (envia o nome da tecla como parâmetro).</li>
+                        <li><code>obj.play()</code> / <code>obj.pause()</code> - Controla reprodução de elementos <code>video</code> e <code>audio</code>.</li>
+                        <li><code>page.linkgo("nome_pagina")</code> - Navega para outra página do projeto ou abre URL externa (<code>"https://..."</code>).</li>
+                        <li><code>page.fetch("/endpoint", dados)</code> - Faz requisição HTTP usando a URL Base e Token configurados na janela <strong>⚙ API Config</strong>.</li>
+                        <li><code>time.sleep(segundos)</code> - Pausa a execução assíncrona sem travar o navegador.</li>
+                    </ul>
+                    <pre class="docCode">def enviar():
+    res = page.fetch("/usuarios", {"nome": page.input_1.value})
+    print(res)
+
+page.botao_1.on_click(enviar)</pre>
+                </section>
+
+                <section id="sec-device" class="docSection" style="display: none;">
+                    <h3>4. Detecção de Dispositivo e Funções Utilitárias</h3>
+                    <p><strong>Detecção de Dispositivo (<code>page.device</code>):</strong></p>
+                    <ul>
+                        <li><code>page.device.is_mobile</code> - <code>True</code> se estiver em smartphone.</li>
+                        <li><code>page.device.is_tablet</code> - <code>True</code> se estiver em tablet.</li>
+                        <li><code>page.device.is_desktop</code> - <code>True</code> se estiver em computador/PC.</li>
+                        <li><code>page.device.width</code> / <code>page.device.height</code> - Largura e altura atuais da janela.</li>
+                    </ul>
+                    <p><strong>Funções Nativas Embutidas:</strong></p>
+                    <ul>
+                        <li><code>print(msg)</code> - Exibe mensagens no console do editor.</li>
+                        <li><code>int(v)</code>, <code>float(v)</code>, <code>str(v)</code>, <code>len(v)</code> - Conversão de tipos e tamanho.</li>
+                        <li><code>abs(n)</code>, <code>round(n)</code>, <code>min(a, b)</code>, <code>max(a, b)</code>, <code>random()</code> - Funções matemáticas.</li>
+                        <li><code>json_encode(obj)</code> / <code>json_decode(str)</code> - Manipulação de JSON.</li>
+                    </ul>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showDocSection(sectionId, btnElement) {
+            const sections = document.querySelectorAll('.docSection');
+            sections.forEach(sec => sec.style.display = 'none');
+            document.getElementById(sectionId).style.display = 'block';
+            const buttons = document.querySelectorAll('.docTabBtn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            btnElement.classList.add('active');
+        }
+    </script>
+    <script src="script.js"></script>
+</body>
+</html>
